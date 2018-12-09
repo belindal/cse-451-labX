@@ -1,22 +1,42 @@
 # LAB X WRITEUP
 
+## Colored Console
+I implemented a colored console, AKA the second challenge problem in [Lab 1](https://courses.cs.washington.edu/courses/cse451/18au/labs/lab1.html#formatted-printing-to-the-console).
+I implemented ANSI escape sequences such that the user can embed an escape code in their string, in the format of ```ESC[XXm``` or ```ESC[XX;XXm``` (the `XX` portions are numberic codes) and the resulting string printed to the console will have color and/or highlight.
+Here is a mapping of how each color maps to its respective foreground or background numberic code:
+
+FG Code | BG Code | Color
+--------|---------|-------
+   30   |    40   | black
+   31   |    41   | blue
+   32   |    42   | green
+   33   |    43   | cyan
+   34   |    44   | red
+   35   |    45   | magenta
+   36   |    46   | brown
+   37   |    47   | gray
+
+For example, ```cprintf("ESC[31mhello");``` results in printing out a blue "hello," whereas ```ESC[31;42m``` results in printing out a blue "hello," on a green background.
+
+### Why Did I Choose This?
+It makes the the console prettier, I guess.
+
+### Challenges
+While it was relatively easy to implement colored printing in the kernel, by far the biggest challenging was implementing colored printing in user space. For starters, the `cprintf` in user space follows a completely different code-path than `cprintf` in kernel space, especially as it calls `sys_cputs`, which prints using `cprintf("%s", <user string>)`, rather than just directly printing the user string. To compensate for this, I implemented a system call `sys_colorprint(const char *s, int fgcolor, int bgcolor)` which takes in a user-specified string `s`, a foreground color code `fgcolor` (30-37), and a background color code `bgcolor` (40-47), and prints the user-specified string with the specified color combination.
+
+### See The Code In Action
+From kernel space, I colored-print the "Welcome to the JOS kernel monitor!" and "Type 'help' for a list of commands." strings in `kern/monitor.c` using ANSI escape sequence. This can be seen from running `make qemu`.
+
+From user space, my implementation of CSP Matrix Multiplication (see below) frequently uses `sys_colorprint`. To see this in action, run `make run-matrixMultiply`.
+
 ## CSP Matrix Multiplication
-We implemented a concurrent matrix multiplication algorithm as outlined in
-the [Communicating Sequential Processes](https://www.cs.cmu.edu/~crary/819-f09/Hoare78.pdf)
-paper, AKA the final challenge problem in
-[Lab 4](https://courses.cs.washington.edu/courses/cse451/18au/labs/lab4.html#inter-process-communication-ipc).
-This algorithm can efficiently multiply a Rx3 input matrix `IN` with a 3x3 square
-matrix `A` by taking advantage of messages being passed amongst a large number
-of concurrent processes.
+We (Tali and I) implemented a concurrent matrix multiplication algorithm as outlined in the [Communicating Sequential Processes](https://www.cs.cmu.edu/~crary/819-f09/Hoare78.pdf) paper, AKA the final challenge problem in [Lab 4](https://courses.cs.washington.edu/courses/cse451/18au/labs/lab4.html#inter-process-communication-ipc).
+This algorithm can efficiently multiply a Rx3 input matrix `IN` with a 3x3 square matrix `A` by taking advantage of messages being passed amongst a large number of concurrent processes.
 
-We have extended this algorithm to be able to multiply an arbitrary-sized input
-matrix `IN` (dimensions RxC) with an arbitrary-sized square matrix `A`
-(dimensions CxC), with the only restriction on C being that it is less than 30.
-(We only have 1024 processes total, and 2 processes are being used as the parent
-running the program and user/idle. The number of processes that the algorithm
-must use is a function of C: `# Processes = C^2 + 4C <= 1022` implies `C <= 30`.)
+We have extended this algorithm to be able to multiply an arbitrary-sized input matrix `IN` (dimensions RxC) with an arbitrary-sized square matrix `A` (dimensions CxC), with the only restriction on C being that it is less than 30.
+(We only have 1024 processes total, and 2 processes are being used as the parent running the program and user/idle. The number of processes that the algorithm must use is a function of C: `# Processes = C^2 + 4C <= 1022` implies `C <= 30`.)
 
-All code changes from this problem is localized in user/matrixMultiply.c
+All code changes from this problem is localized in matrixMultiply.c
 
 ### How To Run Our Code
 By default, we have set our code to run 10 trials of multiplying a 14-by-10 `IN` matrix
